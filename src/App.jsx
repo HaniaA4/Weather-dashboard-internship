@@ -1,17 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import Header from './components/Header';
-import SearchBar from './components/SearchBar';
 import ForecastCard from './components/ForecastCard';
-import Spinner from './components/Spinner';
-import DarkModeToggle from './components/DarkModeToggle';
-import TemperatureChart from './components/TempChart';
-import SavedCities from './components/SavedCities';
 import Highlights from './components/Highlights';
 import CurrentWeather from './components/CurrentWeather';
 import HourlyForecast from './components/HourlyForecast';
 import TomorrowForecast from './components/TomorrowForecast';
-import OtherCities from './components/OtherCities';
+import Spinner from './components/Spinner';
+import TemperatureChart from './components/TempChart';
 
 const cityPool = [
   'Paris', 'New York', 'Cairo', 'Tokyo', 'Sydney', 'Islamabad', 'Moscow', 'Rio de Janeiro', 'Toronto', 'Beijing', 'Cape Town',
@@ -24,65 +20,94 @@ function getRandomCities(pool, count) {
   return shuffled.slice(0, count);
 }
 
+// --- Reusable helpers ---
+const getWeatherData = async (city, apiKey) => {
+  const res = await fetch(
+    `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`
+  );
+  if (!res.ok) throw new Error('City not found. Enter a valid city name.');
+  return await res.json();
+};
+
+const filterForecastByHour = (list, hourStr = '12:00:00') =>
+  list.filter(item => item.dt_txt.includes(hourStr));
+
+function ActionButton({ children, onClick, disabled }) {
+  return (
+    <button
+      className={`px-4 py-2 rounded text-sm transition ${
+        disabled
+          ? 'bg-gray-400/20 font-medium text-gray-900 cursor-not-allowed'
+          : 'bg-blue-400 text-white hover:bg-blue-600'
+      }`}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      {children}
+    </button>
+  );
+}
+
 function App() {
   const [weather, setWeather] = useState(null);
   const [forecast, setForecast] = useState([]);
   const [hourly, setHourly] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [savedCities, setSavedCities] = useState(() => {
-    // Load from localStorage on first render
     const saved = localStorage.getItem('savedCities');
     return saved ? JSON.parse(saved) : [];
   });
   const [uvIndex, setUvIndex] = useState(null);
   const [chanceOfRain, setChanceOfRain] = useState(null);
   const [otherCitiesWeather, setOtherCitiesWeather] = useState({});
-  const [otherCities, setOtherCities] = useState(() => getRandomCities(cityPool, 3)); // 3 random cities
-  const [selectedSavedCity, setSelectedSavedCity] = useState(null);
+  const [otherCities, setOtherCities] = useState(() => getRandomCities(cityPool, 3));
   const [openSavedCity, setOpenSavedCity] = useState(null);
   const [openSavedCityWeather, setOpenSavedCityWeather] = useState(null);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const apiKey = 'd6cb0b5b5f78bb3a531252591cda0069';
+  const trimmedInput = useMemo(() => searchInput.trim(), [searchInput]);
 
-  const fetchWeather = async (city) => {
+  // --- Weather fetchers ---
+  const fetchWeather = useCallback(async (city) => {
     setError('');
     setWeather(null);
+    setLoading(true);
     try {
-      const res = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`
-      );
-      if (!res.ok) throw new Error();
-      const data = await res.json();
+      const data = await getWeatherData(city, apiKey);
       setWeather(data);
       setError('');
       return true;
-    } catch {
-      setError('City not found. Enter a valid city name.');
+    } catch (err) {
+      setError(err.message);
       return false;
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [apiKey]);
 
-  const fetchForecast = async (city) => {
-    const res = await axios.get(
-      `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${apiKey}`
-    );
-    setForecast(res.data.list.filter(item => item.dt_txt.includes('12:00:00')));
-    setHourly(res.data.list.slice(0, 6));
-    setChanceOfRain(res.data.list[0]?.pop ?? null); // pop is 0-1
-  };
+  const fetchForecast = useCallback(async (city) => {
+    setLoading(true);
+    try {
+      const res = await axios.get(
+        `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${apiKey}`
+      );
+      setForecast(filterForecastByHour(res.data.list));
+      setHourly(res.data.list.slice(0, 6));
+      setChanceOfRain(res.data.list[0]?.pop ?? null);
+    } finally {
+      setLoading(false);
+    }
+  }, [apiKey]);
 
+  // --- Other cities weather ---
   useEffect(() => {
     async function fetchAllOtherCities() {
       const weatherData = {};
       for (const city of otherCities) {
         try {
-          const res = await axios.get(
-            `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`
-          );
-          weatherData[city] = res.data;
+          weatherData[city] = await getWeatherData(city, apiKey);
         } catch {
           weatherData[city] = null;
         }
@@ -90,8 +115,9 @@ function App() {
       setOtherCitiesWeather(weatherData);
     }
     fetchAllOtherCities();
-  }, [otherCities]);
+  }, [otherCities, apiKey]);
 
+  // --- Geolocation on mount ---
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -104,111 +130,107 @@ function App() {
       },
       () => fetchWeather('Lisbon')
     );
+    // eslint-disable-next-line
   }, []);
 
-  const handleShowSavedCity = (city) => {
+  // --- Saved city preview ---
+  const handleShowSavedCity = async (city) => {
     if (openSavedCity === city) {
-      // Clicking again closes the box
       setOpenSavedCity(null);
       setOpenSavedCityWeather(null);
       return;
     }
+    setLoading(true);
     setOpenSavedCity(city);
-    axios
-      .get(
-        `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`
-      )
-      .then(res => setOpenSavedCityWeather(res.data));
+    try {
+      setOpenSavedCityWeather(await getWeatherData(city, apiKey));
+    } catch {
+      setOpenSavedCityWeather(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Function to handle searching for a city
+  // --- Search handler ---
   const handleSearch = async () => {
-    if (!searchInput.trim()) return;
-    try {
-      setError('');
-      await fetchWeather(searchInput.trim());
-    } catch {
-      setError('City not found. Enter a valid city name.');
-    }
+    if (!trimmedInput) return;
+    await fetchWeather(trimmedInput);
   };
 
-  // Function to handle saving a city (only if valid)
+  // --- Save city handler ---
   const handleSaveCity = async () => {
-    const city = searchInput.trim();
-    if (!city || savedCities.includes(city)) return;
-    // Use a separate error state for saving, or just set error only if invalid
+    if (!trimmedInput || savedCities.includes(trimmedInput)) return;
     try {
-      const res = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`
-      );
-      if (!res.ok) throw new Error();
-      if (!savedCities.includes(city)) {
-        setSavedCities([...savedCities, city]);
-      }
-      setError(''); // Clear error if city is valid
-    } catch {
-      setError('City not found. Enter a valid city name.');
+      await getWeatherData(trimmedInput, apiKey);
+      setSavedCities([...savedCities, trimmedInput]);
+      setError('');
+    } catch (err) {
+      setError(err.message);
     }
   };
 
-  // Sync savedCities to localStorage whenever it changes
+  // --- Persist saved cities ---
   useEffect(() => {
     localStorage.setItem('savedCities', JSON.stringify(savedCities));
   }, [savedCities]);
 
   return (
-    <div className={`${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-blue-100 to-blue-300'} min-h-screen p-6`}>
+      <div className="bg-gradient-to-br from-blue-100 to-blue-300 min-h-screen p-6 transition-colors duration-300">      
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Top Controls */}
-        <div className="flex justify-between items-center mb-6">
-          <DarkModeToggle darkMode={darkMode} setDarkMode={setDarkMode} />
+        <div className="flex justify-end items-center mb-6">
           <Header />
         </div>
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex flex-row items-stretch gap-2 mb-4">
           <input
             type="text"
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
-            className="border rounded px-2 py-1"
+            className="border rounded px-2 py-1 w-full sm:w-auto"
             placeholder="Search city..."
             onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
           />
-          <button
-            className="px-4 py-2 rounded text-sm bg-blue-500 text-white hover:bg-blue-600 transition"
+          <ActionButton
             onClick={handleSearch}
-            disabled={!searchInput.trim()}
+            disabled={!trimmedInput}
+            className="w-auto"
           >
             Search
-          </button>
-          <button
-            className={`px-4 py-2 rounded text-sm transition ${
-              searchInput && savedCities.includes(searchInput.trim())
-                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                : 'bg-blue-500 text-white hover:bg-blue-600'
-            }`}
+          </ActionButton>
+          <ActionButton
             onClick={handleSaveCity}
-            disabled={!searchInput.trim() || savedCities.includes(searchInput.trim())}
+            disabled={!trimmedInput || savedCities.includes(trimmedInput)}
+            className="w-auto"
           >
-            {searchInput && savedCities.includes(searchInput.trim()) ? 'Saved' : 'Save City'}
-          </button>
+            {trimmedInput && savedCities.includes(trimmedInput) ? 'Saved' : 'Save City'}
+          </ActionButton>
         </div>
         {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
         {/* Main Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
           {/* Left: Today's Weather (with Tomorrow's Weather inside) */}
           <div>
-            {weather && (
-              <div className="bg-white dark:bg-gray-400/20 rounded shadow p-4 flex items-start gap-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold mb-2">Current Weather</h3>
-                  <CurrentWeather data={weather} />
-                </div>
-                {forecast.length > 0 && (
-                  <div className="w-36">
-                    <h4 className="font-semibold mb-1 text-center">Tomorrow</h4>
+            {loading && <Spinner />}
+            {!loading && weather && (
+              <div className="bg-white dark:bg-gray-400/20 rounded shadow p-4 h-full">
+                <div className="flex flex-row gap-4 w-full">
+                  {/* Current Weather */}
+                  
+                  <div className="w-1/2 min-w-0">
+                  <h4 className="text-base sm:text-xl font-semibold mb-2 whitespace-nowrap">
+                    Current Weather
+                    </h4>
+                    <CurrentWeather data={weather} />
+                  </div>
+                  {/* Tomorrow Weather */}
+                  
+                  <div className="w-1/2 min-w-0">
+                    <h4 className="text-base sm:text-xl font-semibold mb-2 text-center whitespace-nowrap">
+                      Tomorrow
+                    </h4>
                     <TomorrowForecast data={forecast} />
                   </div>
-                )}
+                </div>
               </div>
             )}
           </div>
@@ -224,31 +246,38 @@ function App() {
         </div>
 
         {/* Bottom Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
           {/* Left: Forecasts + Sun Info */}
-          <div>
-            <div className="bg-white dark:bg-gray-400/20 rounded shadow p-4 space-y-4">
-              <h3 className="text-lg font-semibold mb-2">Forecast</h3>
+          <div className="h-full">
+            <div className="bg-white dark:bg-gray-400/20 rounded shadow p-4 space-y-2 h-full flex flex-col">
+              <h3 className="text-xl font-semibold mb-2">Forecast</h3>
+              
               {hourly.length > 0 && <HourlyForecast data={hourly} />}
-              {forecast.length > 0 && <TemperatureChart forecast={forecast} />}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                {forecast.map((day, idx) => (
-                  <ForecastCard key={idx} day={day} />
-                ))}
-              </div>
-              {/* Optional: Sunrise/Sunset */}
-              {/* {weather && <SunInfo data={weather} />} */}
+              {forecast && forecast.length > 0 && (
+                <div className="flex flex-row items-start gap-6 h-24">
+                  {/* Forecast Cards: always swipable */}
+                  <div className="overflow-x-auto flex gap-4 scrollbar-custom mt-2 pb-2">
+                    {forecast.map((day, idx) => (
+                      <ForecastCard key={idx} day={day} />
+                    ))}
+                  </div>
+                  {/* Temperature Chart */}
+                  <div className="flex-shrink-0 h-full flex items-center mt-4">
+                    <TemperatureChart forecast={forecast} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           {/* Right: Saved & Other Cities */}
-          <div className="space-y-4">
-            <div className="bg-white dark:bg-gray-400/20 rounded shadow p-4">
-              <h3 className="text-lg font-semibold mb-2">Saved Cities</h3>
+          <div className="h-full space-y-4 flex flex-col">
+            <div className="bg-white dark:bg-gray-400/20 rounded shadow p-4 mb-4">
+              <h3 className="text-xl font-semibold mb-3">Saved Cities</h3>
               <div className="flex flex-wrap gap-2">
                 {savedCities.map(city => (
                   <div key={city} className="relative">
                     <button
-                      className="bg-blue-100 rounded px-2 py-1 text-sm"
+                      className="bg-blue-50 rounded px-2 py-1 text-sm mb-2"
                       onClick={() => handleShowSavedCity(city)}
                     >
                       {city}
@@ -267,12 +296,12 @@ function App() {
               </div>
             </div>
             <div className="bg-white dark:bg-gray-400/20 rounded shadow p-4">
-              <h3 className="text-lg font-semibold">Other Cities</h3>
-<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-4">   
-               {otherCities.map(city => (
+              <h3 className="text-xl font-semibold">Other Cities</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-4">
+                {otherCities.map(city => (
                   <div
                     key={city}
-                    className="bg-white rounded-lg shadow-md p-3 text-center flex flex-col justify-center items-center h-full w-full"
+                    className="bg-blue-50 rounded-lg shadow-md p-3 text-center flex flex-col justify-center items-center h-full w-full"
                     style={{ minWidth: 0 }}
                   >
                     {otherCitiesWeather[city] ? (
@@ -292,7 +321,6 @@ function App() {
             </div>
           </div>
         </div>
-        {weather && !savedCities.includes(weather.name) }
       </div>
     </div>
   );

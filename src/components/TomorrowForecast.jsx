@@ -7,7 +7,7 @@ function TomorrowForecast({ data }) {
   if (!tomorrow) return null;
 
   return (
-    <div className="bg-white rounded shadow p-4 mt-4 text-center">
+    <div className="bg-blue-50 rounded shadow p-4 mt-4 text-center">
       <h3 className="text-xl font-semibold">Tomorrow</h3>
       <p>{Math.round(tomorrow.main.temp)}°C</p>
       <p>{tomorrow.weather[0].description}</p>

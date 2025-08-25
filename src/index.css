@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Scrollbar styles */
+.scrollbar-custom {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #edf2f7; /* thumb and track colors */
+}
+
+/* For WebKit browsers */
+.scrollbar-custom::-webkit-scrollbar {
+  height: 8px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: #edf2f7; /* light grey track */
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background-color: #cbd5e0; /* darker grey thumb */
+  border-radius: 4px;
+}
