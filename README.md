@@ -1,70 +1,113 @@
-# Getting Started with Create React App
+🌦️ Weather Dashboard – Internship Project
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A real-time weather dashboard built with React and OpenWeatherMap API.   
+Displays current conditions, hourly highlights, and multi-day forecasts with a clean, responsive UI.
 
-## Available Scripts
+✨ Features
 
-In the project directory, you can run:
+📍 Location-Based Weather:    
+Auto-fetches weather based on user’s current location.
 
-### `npm start`
+🔍 Search Functionality:    
+Search for any city and view live weather data.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+📅 Hourly & Daily Forecasts:    
+Scrollable cards with temperature, icons, and conditions.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+📊 Temperature Chart:    
+Visual trend of upcoming temperatures using a line graph.
 
-### `npm test`
+📱 Responsive Design:    
+Optimized for all screen sizes and devices.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---------------------------------------------------------------------------------------------------
 
-### `npm run build`
+🛠️ Tech Stack
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+React (JavaScript)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Tailwind CSS
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Axios
 
-### `npm run eject`
+OpenWeatherMap API
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Vercel (Deployment)
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+GitHub (Version Control)
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+----------------------------------------------------------------------------------------------------
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+🚀 Live Demo
 
-## Learn More
+🔗 View the deployed site
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+----------------------------------------------------------------------------------------------------
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+📂 Folder Structure
 
-### Code Splitting
+src/
+├── components/
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+│   └── CurrentWeather.js
 
-### Analyzing the Bundle Size
+│   └── HourlyForecast.js
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+│   └── ForecastCard.js
 
-### Making a Progressive Web App
+│   └── TempChart.js
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+│   └── Highlights.js
 
-### Advanced Configuration
+│   └── TomorrowForecast.js
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+├── App.js
 
-### Deployment
+├── index.js
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+---------------------------------------------------------------------------------------------------
 
-### `npm run build` fails to minify
+📦 Installation
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+git clone https://github.com/HaniaA4/Weather-dashboard-internship
+
+cd Weather-dashboard-internship
+
+npm install
+
+npm start
+
+---------------------------------------------------------------------------------------------------
+
+🧪 Development Notes
+
+Weather data fetched using Axios and OpenWeatherMap API
+
+Scrollable forecast sections styled with custom scrollbar
+
+---------------------------------------------------------------------------------------------------
+
+🙋‍♀️ Author
+
+Hania Aziz
+
+Junior Full Stack Developer 
+
+haniaaziz095@gmail.com
+
+http://www.linkedin.com/in/haniaaziz
+
+---------------------------------------------------------------------------------------------------
+
+📄 License
+
+This project is licensed under the MIT License.
+
+
+
+
+
+
+
+
+
